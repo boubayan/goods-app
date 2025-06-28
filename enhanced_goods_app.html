@@ -1,0 +1,232 @@
+
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>إدارة السلع المتقدمة</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, sans-serif;
+      direction: rtl;
+      padding: 20px;
+      background-color: #f4f4f4;
+      color: #333;
+      max-width: 800px;
+      margin: auto;
+      transition: background-color 0.3s, color 0.3s;
+    }
+    .dark-mode {
+      background-color: #121212;
+      color: #e0e0e0;
+    }
+    h2, h3 {
+      color: inherit;
+    }
+    form, table {
+      width: 100%;
+    }
+    input, select, button, textarea {
+      padding: 10px;
+      margin: 6px 0;
+      font-size: 16px;
+      width: 100%;
+      box-sizing: border-box;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    button {
+      background-color: #3498db;
+      color: white;
+      border: none;
+    }
+    button:hover {
+      background-color: #2980b9;
+    }
+    .delete-btn {
+      background-color: #e74c3c;
+    }
+    .delete-btn:hover {
+      background-color: #c0392b;
+    }
+    .clear-btn {
+      background-color: #7f8c8d;
+    }
+    .clear-btn:hover {
+      background-color: #666;
+    }
+    .export-btn {
+      background-color: #27ae60;
+    }
+    .export-btn:hover {
+      background-color: #1e8449;
+    }
+    .dark-mode button {
+      color: white;
+    }
+    table {
+      border-collapse: collapse;
+      margin-top: 20px;
+      background-color: white;
+    }
+    .dark-mode table {
+      background-color: #1e1e1e;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 10px;
+      text-align: center;
+    }
+    th {
+      background-color: #3498db;
+      color: white;
+    }
+    .dark-mode th {
+      background-color: #2f4f8b;
+    }
+    #total {
+      font-size: 18px;
+      font-weight: bold;
+      margin-top: 15px;
+      text-align: center;
+    }
+    footer {
+      text-align: center;
+      margin-top: 40px;
+      color: #888;
+    }
+    @media (max-width: 600px) {
+      table, thead, tbody, th, td, tr {
+        display: block;
+      }
+      td {
+        border: none;
+        border-bottom: 1px solid #eee;
+        position: relative;
+        padding-right: 50%;
+      }
+      td:before {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        white-space: nowrap;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<h2>📦 إضافة سلعة</h2>
+<form id="itemForm">
+  <input type="text" id="itemName" placeholder="اسم السلعة" required>
+  <select id="itemType">
+    <option value="أطعمة">أطعمة</option>
+    <option value="مشروبات">مشروبات</option>
+    <option value="كماليات">كماليات</option>
+    <option value="أخرى">أخرى</option>
+  </select>
+  <input type="number" id="itemQuantity" placeholder="الكمية" required>
+  <input type="number" id="itemPrice" placeholder="السعر للوحدة (ر.ع)" step="0.01" required>
+  <textarea id="itemNotes" placeholder="ملاحظات (اختياري)"></textarea>
+  <button type="submit">➕ إضافة</button>
+</form>
+
+<h3>📋 قائمة السلع</h3>
+<table id="itemsTable">
+  <tr>
+    <th>الاسم</th>
+    <th>النوع</th>
+    <th>الكمية</th>
+    <th>السعر للوحدة</th>
+    <th>الإجمالي</th>
+    <th>ملاحظات</th>
+    <th>إجراء</th>
+  </tr>
+</table>
+
+<div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-top: 10px;">
+  <button class="clear-btn" onclick="clearAll()">🧹 مسح الكل</button>
+  <button class="export-btn" onclick="exportToExcel()">📥 تصدير Excel</button>
+  <button onclick="toggleDarkMode()">🌓 تبديل الوضع الليلي</button>
+</div>
+
+<div id="total">💰 المجموع الكلي: 0.00 ريال عماني</div>
+
+<footer>
+  تم التصميم بواسطة: <strong>بوبيان</strong> 💼
+</footer>
+
+<script>
+  let items = JSON.parse(localStorage.getItem('goods')) || [];
+
+  function updateDisplay() {
+    const table = document.getElementById('itemsTable');
+    while (table.rows.length > 1) table.deleteRow(1);
+    let total = 0;
+    items.forEach((item, index) => {
+      const row = table.insertRow();
+      row.insertCell(0).innerText = item.name;
+      row.insertCell(1).innerText = item.type;
+      row.insertCell(2).innerText = item.quantity;
+      row.insertCell(3).innerText = item.unitPrice.toFixed(2);
+      row.insertCell(4).innerText = (item.unitPrice * item.quantity).toFixed(2);
+      row.insertCell(5).innerText = item.notes || "-";
+      const deleteCell = row.insertCell(6);
+      const btn = document.createElement("button");
+      btn.className = "delete-btn";
+      btn.textContent = "🗑️ مسح";
+      btn.onclick = () => {
+        items.splice(index, 1);
+        localStorage.setItem('goods', JSON.stringify(items));
+        updateDisplay();
+      };
+      deleteCell.appendChild(btn);
+      total += item.unitPrice * item.quantity;
+    });
+    document.getElementById('total').innerText = "💰 المجموع الكلي: " + total.toFixed(2) + " ريال عماني";
+  }
+
+  document.getElementById('itemForm').onsubmit = function(e) {
+    e.preventDefault();
+    const name = document.getElementById('itemName').value.trim();
+    const type = document.getElementById('itemType').value;
+    const quantity = parseFloat(document.getElementById('itemQuantity').value);
+    const unitPrice = parseFloat(document.getElementById('itemPrice').value);
+    const notes = document.getElementById('itemNotes').value.trim();
+
+    if (!name || isNaN(quantity) || isNaN(unitPrice)) return;
+
+    items.push({ name, type, quantity, unitPrice, notes });
+    localStorage.setItem('goods', JSON.stringify(items));
+    updateDisplay();
+    this.reset();
+  };
+
+  function clearAll() {
+    if (confirm("هل أنت متأكد أنك تريد مسح كل السلع؟")) {
+      items = [];
+      localStorage.removeItem('goods');
+      updateDisplay();
+    }
+  }
+
+  function toggleDarkMode() {
+    document.body.classList.toggle('dark-mode');
+  }
+
+  function exportToExcel() {
+    let csv = "اسم السلعة,النوع,الكمية,السعر للوحدة,الإجمالي,ملاحظات\n";
+    items.forEach(item => {
+      csv += `${item.name},${item.type},${item.quantity},${item.unitPrice},${(item.unitPrice * item.quantity).toFixed(2)},${item.notes || ""}\n`;
+    });
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "قائمة_السلع.csv";
+    link.click();
+  }
+
+  updateDisplay();
+</script>
+
+</body>
+</html>
